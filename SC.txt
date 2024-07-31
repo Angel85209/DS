@@ -1,0 +1,721 @@
+P No 1
+Implimentation of AND gate
+
+x1 = [0,0,1,1] #input 1
+x2 = [0,1,0,1] #input 2
+​
+w1 = [1,1,1,1] #weight of
+w2 = [1,1,1,1]
+​
+​
+t = 2 #threshold value
+​
+#AND gate implimentation
+print("x1 x2 w1 w2 Th Act.fun")
+for i in range(len(x1)):
+    if(x1[i]*w1[i]*w2[i]) >= t:
+        print(x1[i], ' ',x2[i], ' ',w1[i], ' ',w2[i], ' ',t, ' ',1)
+    else:
+        print(x1[i], ' ',x2[i], ' ',w1[i], ' ',w2[i], ' ',t, ' ',0)
+
+
+OR Gate
+x1 = [0,0,1,1] #input 1
+x2 = [0,1,0,1] #input 2
+
+w1 = [1,1,1,1] #weight of
+w2 = [1,1,1,1]
+
+
+t = 1 #threshold value
+
+#AND gate implimentation
+print("x1 x2 w1 w2 Th Act.fun")
+for i in range(len(x1)):
+    if(x1[i]*w1[i]*w2[i]) >= t:
+        print(x1[i], ' ',x2[i], ' ',w1[i], ' ',w2[i], ' ',t, ' ',1)
+    else:
+        print(x1[i], ' ',x2[i], ' ',w1[i], ' ',w2[i], ' ',t, ' ',0)
+
+
+Not gate
+
+x = [0,1]
+w = [-1,-1]
+​
+t = 0
+​
+print("x w  t Act.fun")
+​
+for i in range(len(x)):
+    if (x[i]*w[i] >= t):
+        print(x[i], ' ',w[i], ' ',t, ' ',1)
+    else:
+        print(x[i], ' ',w[i], ' ',t, ' ',0)
+
+
+
+
+P No 2
+#Implementation of Hebbs Rule
+import numpy as np
+x1 = np.array([1,1,1,-1,1,-1,1,1,1])
+x2 = np.array([1,1,1,1,-1,1,1,1,1])
+b = 0
+y = np.array([1,-1])
+wtold = np.zeros((9,))
+wtnew = np.zeros((9,))
+wtnew = wtnew.astype(int)
+wtold = wtold.astype(int)
+bias = 0
+
+print("first input with target = 1" )
+for i in range(0,9):
+    wtold[i] = wtold[i] + x1[i]*y[0]
+wtnew = wtold
+b = b + y[0]
+print("Old wt = ", wtold)
+print("Bias value = ", b)
+
+print("Second input with target = -1")
+for i in range(0,9):
+    wtnew[i] = wtold[i] + x2[i]*y[1]
+wtnew = wtold
+b = b + y[1]
+print("New wt = ", wtnew)
+print("Bias value = ", b)
+
+
+
+
+p no 3
+Aim: To implement Kohonen Self-Organizing Maps
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+class KohonenSOM:
+    def __init__(self, x, y, input_len, learning_rate=0.5, radius=None, radius_decay=0.99, learning_rate_decay=0.99):
+        """
+        Initialize the Self-Organizing Map (SOM).
+        
+        Parameters:
+        x, y: Dimensions of the SOM grid.
+        input_len: Length of the input vectors.
+        learning_rate: Initial learning rate.
+        radius: Initial neighborhood radius. If None, it will be set to max(x, y) / 2.
+        radius_decay: Decay rate for the radius.
+        learning_rate_decay: Decay rate for the learning rate.
+        """
+        self.x = x
+        self.y = y
+        self.input_len = input_len
+        self.learning_rate = learning_rate
+        self.radius = radius if radius is not None else max(x, y) / 2
+        self.radius_decay = radius_decay
+        self.learning_rate_decay = learning_rate_decay
+        
+        # Initialize the weights randomly
+        self.weights = np.random.rand(x, y, input_len)
+
+    def train(self, data, num_iterations):
+        """
+        Train the SOM with the given data.
+        
+        Parameters:
+        data: The input data for training.
+        num_iterations: Number of iterations for training.
+        """
+        for i in range(num_iterations):
+            # Select a random sample from the data
+            sample = data[np.random.randint(len(data))]
+            
+            # Find the Best Matching Unit (BMU)
+            bmu_index = self.find_bmu(sample)
+            
+            # Update the weights of the BMU and its neighbors
+            self.update_weights(sample, bmu_index, i, num_iterations)
+            
+            # Decay the learning rate and radius
+            self.learning_rate *= self.learning_rate_decay
+            self.radius *= self.radius_decay
+
+    def find_bmu(self, sample):
+        """
+        Find the Best Matching Unit (BMU) for a given sample.
+        
+        Parameters:
+        sample: The input sample vector.
+        
+        Returns:
+        bmu_index: The index of the BMU in the SOM grid.
+        """
+        distances = np.linalg.norm(self.weights - sample, axis=-1)
+        bmu_index = np.unravel_index(np.argmin(distances), (self.x, self.y))
+        return bmu_index
+
+    def update_weights(self, sample, bmu_index, iteration, num_iterations):
+        """
+        Update the weights of the BMU and its neighbors.
+        
+        Parameters:
+        sample: The input sample vector.
+        bmu_index: The index of the BMU in the SOM grid.
+        iteration: The current iteration number.
+        num_iterations: The total number of iterations.
+        """
+        for i in range(self.x):
+            for j in range(self.y):
+                # Calculate the distance from the BMU
+                distance_to_bmu = np.linalg.norm(np.array([i, j]) - np.array(bmu_index))
+                
+                # Calculate the neighborhood function
+                if distance_to_bmu <= self.radius:
+                    influence = np.exp(-distance_to_bmu**2 / (2 * (self.radius**2)))
+                    
+                    # Update the weights
+                    self.weights[i, j, :] += influence * self.learning_rate * (sample - self.weights[i, j, :])
+
+    def visualize(self):
+        """
+        Visualize the SOM weights.
+        """
+        plt.imshow(self.weights.reshape(self.x * self.y, self.input_len), cmap='viridis')
+        plt.colorbar()
+        plt.show()
+
+# Example usage:
+if __name__ == "__main__":
+    # Generate some random data
+    data = np.random.rand(100, 3)  # 100 samples, each with 3 features
+
+    # Initialize the SOM
+    som = KohonenSOM(x=10, y=10, input_len=3, learning_rate=0.5)
+
+    # Train the SOM
+    som.train(data, num_iterations=1000)
+
+    # Visualize the SOM
+    som.visualize()
+import numpy as np
+import matplotlib.pyplot as plt
+​
+class KohonenSOM:
+    def __init__(self, x, y, input_len, learning_rate=0.5, radius=None, radius_decay=0.99, learning_rate_decay=0.99):
+        """
+        Initialize the Self-Organizing Map (SOM).
+        
+        Parameters:
+        x, y: Dimensions of the SOM grid.
+        input_len: Length of the input vectors.
+        learning_rate: Initial learning rate.
+        radius: Initial neighborhood radius. If None, it will be set to max(x, y) / 2.
+        radius_decay: Decay rate for the radius.
+        learning_rate_decay: Decay rate for the learning rate.
+        """
+        self.x = x
+        self.y = y
+        self.input_len = input_len
+        self.learning_rate = learning_rate
+        self.radius = radius if radius is not None else max(x, y) / 2
+        self.radius_decay = radius_decay
+        self.learning_rate_decay = learning_rate_decay
+        
+        # Initialize the weights randomly
+        self.weights = np.random.rand(x, y, input_len)
+​
+    def train(self, data, num_iterations):
+        """
+        Train the SOM with the given data.
+        
+        Parameters:
+        data: The input data for training.
+        num_iterations: Number of iterations for training.
+        """
+        for i in range(num_iterations):
+            # Select a random sample from the data
+            sample = data[np.random.randint(len(data))]
+            
+            # Find the Best Matching Unit (BMU)
+            bmu_index = self.find_bmu(sample)
+            
+            # Update the weights of the BMU and its neighbors
+            self.update_weights(sample, bmu_index, i, num_iterations)
+            
+            # Decay the learning rate and radius
+            self.learning_rate *= self.learning_rate_decay
+            self.radius *= self.radius_decay
+​
+    def find_bmu(self, sample):
+        """
+        Find the Best Matching Unit (BMU) for a given sample.
+        
+        Parameters:
+        sample: The input sample vector.
+        
+        Returns:
+        bmu_index: The index of the BMU in the SOM grid.
+        """
+        distances = np.linalg.norm(self.weights - sample, axis=-1)
+        bmu_index = np.unravel_index(np.argmin(distances), (self.x, self.y))
+        return bmu_index
+​
+    def update_weights(self, sample, bmu_index, iteration, num_iterations):
+        """
+        Update the weights of the BMU and its neighbors.
+        
+        Parameters:
+        sample: The input sample vector.
+        bmu_index: The index of the BMU in the SOM grid.
+        iteration: The current iteration number.
+        num_iterations: The total number of iterations.
+        """
+        for i in range(self.x):
+            for j in range(self.y):
+                # Calculate the distance from the BMU
+                distance_to_bmu = np.linalg.norm(np.array([i, j]) - np.array(bmu_index))
+                
+                # Calculate the neighborhood function
+                if distance_to_bmu <= self.radius:
+                    influence = np.exp(-distance_to_bmu**2 / (2 * (self.radius**2)))
+                    
+                    # Update the weights
+                    self.weights[i, j, :] += influence * self.learning_rate * (sample - self.weights[i, j, :])
+​
+    def visualize(self):
+        """
+        Visualize the SOM weights.
+        """
+        plt.imshow(self.weights.reshape(self.x * self.y, self.input_len), cmap='viridis')
+        plt.colorbar()
+        plt.show()
+​
+# Example usage:
+if __name__ == "__main__":
+    # Generate some random data
+    data = np.random.rand(100, 3)  # 100 samples, each with 3 features
+​
+    # Initialize the SOM
+    som = KohonenSOM(x=10, y=10, input_len=3, learning_rate=0.5)
+​
+    # Train the SOM
+    som.train(data, num_iterations=1000)
+​
+    # Visualize the SOM
+    som.visualize()
+​
+
+
+
+
+
+P no 4
+Aim: Solve the Hamming Network, given the exemplar vectors.
+
+import numpy as np
+​
+# Define the exemplar vectors (pre-defined inputs)
+exemplar_vectors = np.array([
+    [1, 0, 1, 0, 1, 1, 0, 1],
+    [0, 1, 0, 1, 0, 0, 1, 0],
+    [1, 1, 1, 1, 0, 1, 0, 0]
+])
+​
+# Define the input vector
+input_vector = np.array([1, 0, 1, 1, 0, 1, 0, 1])
+​
+def hamming_distance(v1, v2):
+    """
+    Compute the Hamming distance between two binary vectors.
+    """
+    return np.sum(v1 != v2)
+​
+def hamming_network(input_vector, exemplar_vectors):
+    """
+    Find the exemplar vector with the smallest Hamming distance to the input vector.
+    """
+    distances = np.array([hamming_distance(input_vector, ev) for ev in exemplar_vectors])
+    min_distance_index = np.argmin(distances)
+    return min_distance_index, distances[min_distance_index]
+​
+# Run the Hamming Network
+index, distance = hamming_network(input_vector, exemplar_vectors)
+​
+# Output the result
+print(f"The input vector is closest to exemplar vector at index {index} with a Hamming distance of {distance}.")
+
+
+
+
+
+
+p no 5
+Aim: Write a program for implementing BAM network.
+
+import numpy as np
+#Defining BAM class
+class BAM:
+    def __init__(self):
+        self.weights = None
+
+    def train(self, patterns_A, patterns_B):
+        # Initialize weights to zero
+        num_features_A = patterns_A.shape[1]
+        num_features_B = patterns_B.shape[1]
+        self.weights = np.zeros((num_features_A, num_features_B))
+
+        # Train weights using Hebbian learning rule
+        for a, b in zip(patterns_A, patterns_B):
+            self.weights += np.outer(a, b)
+
+    def recall_A(self, pattern_B):
+        # Recall pattern A given pattern B
+        result = np.dot(pattern_B, self.weights.T)
+        return np.sign(result)
+
+    def recall_B(self, pattern_A):
+        # Recall pattern B given pattern A
+        result = np.dot(pattern_A, self.weights)
+        return np.sign(result)
+
+
+
+# Example usage
+if __name__ == "__main__":
+    # Define the training patterns
+    patterns_A = np.array([[1, 1, -1], [-1, 1, 1], [-1, -1, -1]])
+    patterns_B = np.array([[1, -1], [-1, 1], [1, 1]])
+
+    # Initialize BAM
+    bam = BAM()
+
+    # Train BAM with the patterns
+    bam.train(patterns_A, patterns_B)
+
+    # Test recall for pattern B
+    test_pattern_B = np.array([1, -1])
+    recalled_pattern_A = bam.recall_A(test_pattern_B)
+    print("Recalled Pattern A for test pattern B", test_pattern_B, "is:", recalled_pattern_A)
+
+    # Test recall for pattern A
+    test_pattern_A = np.array([1, 1, -1])
+    recalled_pattern_B = bam.recall_B(test_pattern_A)
+    print("Recalled Pattern B for test pattern A", test_pattern_A, "is:", recalled_pattern_B)
+
+
+
+
+
+
+
+p no 6
+Aim: Implement a program to find the winning neuron using MaxNet.
+
+import numpy as np
+​
+def maxnet(input_vector, epsilon=0.1, max_iterations=100):
+    """
+    MaxNet algorithm to find the winning neuron.
+    
+    Parameters:
+    input_vector (np.array): The initial activations of the neurons.
+    epsilon (float): The inhibition factor. Should be a small positive value.
+    max_iterations (int): Maximum number of iterations to run the algorithm.
+    
+    Returns:
+    int: The index of the winning neuron.
+    """
+    # Initialize the activations
+    activations = np.copy(input_vector)
+    num_neurons = len(input_vector)
+    
+    for _ in range(max_iterations):
+        # Compute the inhibition for each neuron
+        inhibition = epsilon * (np.sum(activations) - activations)
+        # Update activations
+        new_activations = activations - inhibition
+        
+        # Set negative activations to zero
+        new_activations[new_activations < 0] = 0
+        
+        # Check if there is only one non-zero activation
+        if np.count_nonzero(new_activations) == 1:
+            break
+        
+        # Update the activations for the next iteration
+        activations = new_activations
+    # Return the index of the winning neuron
+    return np.argmax(activations)
+​
+# Example usage:
+input_vector = np.array([0.2, 0.5, 0.1, 0.7, 0.4])
+winning_neuron = maxnet(input_vector)
+print(f"The winning neuron is at index {winning_neuron} with activation {input_vector[winning_neuron]}")
+
+
+
+
+
+
+
+
+
+
+
+
+​P no 7
+Aim: Implement De-Morgan’s Law
+
+def de_morgans_law_1(A,B):
+    # Law 1: ~ (A v B) = ~A ^ ~B
+    """
+    Variables:
+    not_A_or_B
+    not_A_and_not_B
+    """
+    not_A_or_B = not (A or B)
+    not_A_and_not_B = (not A) and (not B)
+    return not_A_or_B, not_A_and_not_B
+​
+A = bool(input("Enter A: "))
+B = bool(input("Enter B: "))
+result_1 = de_morgans_law_1(A, B)
+​
+print("DeMorgan's Law 1: ~(A v B) = ~A ∧ ~B \n")
+print(f"~({A} V {B})= {result_1[0]}")
+print(f"~({A} ∧ {B})= {result_1[1]}")
+print(f"Law holds: {result_1[0] == result_1[1]}\n")
+​
+def de_morgans_law_2(A,B):
+    # Law 2: ~(A ^ B) = ~A v ~B
+    """
+    Variables:
+    not_A_and_B
+    not_A_or_not_B
+    """
+    not_A_and_B = not (A and B)
+    not_A_or_not_B = (not A) or (not B)
+    return not_A_and_B, not_A_or_not_B
+​
+A = bool(input("Enter A: "))
+B = bool(input("Enter B: "))
+result_2 = de_morgans_law_2(A, B)
+​
+print(f"De Morgan's Law 2: ~(A ∧ B) = ~A ∨ ~B")
+print(f"~({A} ∧ {B}) = {result_2[0]}")
+print(f"~{A} ∨ ~{B} = {result_2[1]}")
+print(f"Law holds: {result_2[0] == result_2[1]}")
+
+
+
+
+
+
+
+
+
+p no 8
+Aim: Implement Union, Intersection, Complement, and Difference operations, on fuzzy sets
+
+# Implementing union operation of Fuzzy sets:
+def fuzzy_union(A, B):
+    """
+    Compute the union of two fuzzy sets A and B.
+    Union: max(A(x), B(x))
+    """
+    return {x: max(A.get(x, 0), B.get(x, 0)) for x in set(A).union(B)}
+​
+# Implementing intersection operation of Fuzzy sets:
+def fuzzy_intersection(A, B):
+    """
+    Compute the intersection of two fuzzy sets A and B.
+    Intersection: min(A(x), B(x))
+    """
+    return {x: min(A.get(x, 0), B.get(x, 0)) for x in set(A).intersection(B)}
+​
+# Implementing complement operation of Fuzzy sets:
+def fuzzy_complement(A):
+    """
+    Compute the complement of a fuzzy set A.
+    Complement: 1 - A(x)
+    """
+    return {x: 1 - A[x] for x in A}
+​
+# Implementing difference operation of Fuzzy sets:
+def fuzzy_difference(A, B):
+    """
+    Compute the difference of two fuzzy sets A and B.
+    Difference: min(A(x), 1 - B(x))
+    """
+    return {x: min(A.get(x, 0), 1 - B.get(x, 0)) for x in set(A).union(B)}
+​
+# Input the fuzzy set operations:
+# Example fuzzy sets
+A = {'x1': 0.1, 'x2': 0.4, 'x3': 0.7}
+B = {'x2': 0.5, 'x3': 0.2, 'x4': 0.8}
+​
+# Perform fuzzy set operations
+union_result = fuzzy_union(A, B)
+intersection_result = fuzzy_intersection(A, B)
+complement_result_A = fuzzy_complement(A)
+difference_result = fuzzy_difference(A, B)
+​
+# Print the results
+print("Fuzzy Set A:", A)
+print("Fuzzy Set B:", B)
+print("\n \n Results of the operations performed on the fuzzy sets: ")
+print("\nUnion (A ∪ B):", union_result)
+print("Intersection (A ∩ B):", intersection_result)
+print("Complement (A'):", complement_result_A)
+print("Difference (A - B):", difference_result)
+
+
+
+
+
+
+
+
+p no 9
+Aim: Create Fuzzy relation by Cartesian product of any two fuzzy sets.
+
+#Define a function to implement Cartesian product
+def cartesian_product_fuzzy_relation(A, B):
+    """
+    Create a fuzzy relation by Cartesian product of fuzzy sets A and B.
+    The membership value of the pair (x, y) is min(A(x), B(y)).
+    """
+    relation = {}
+    for x in A:
+        for y in B:
+            relation[(x, y)] = min(A[x], B[y])
+    return relation
+​
+#Fuzzy sets input:
+A = {'x1': 0.7, 'x2': 0.4, 'x3': 0.9}
+B = {'y1': 0.6, 'y2': 0.8, 'y3': 0.5}
+​
+# Compute the Cartesian product fuzzy relation
+relation = cartesian_product_fuzzy_relation(A, B)
+​
+# Print the results
+print("Fuzzy Set A:", A)
+print("Fuzzy Set B:", B)
+print("\nCartesian Product Fuzzy Relation:")
+for (x, y), value in relation.items():
+    print(f"({x}, {y}): {value}")
+
+
+
+
+
+
+
+
+
+
+p no 10
+Aim: Perform max-min composition on any two fuzzy relations.
+
+def cartesian_product_fuzzy_relation(A, B):
+    """
+    Create a fuzzy relation by Cartesian product of fuzzy sets A and B.
+    The membership value of the pair (x, y) is min(A(x), B(y)).
+    """
+    relation = {}
+    for x in A:
+        for y in B:
+            relation[(x, y)] = min(A[x], B[y])
+    return relation
+
+def max_min_composition(R, S):
+    """
+    Perform max-min composition on fuzzy relations R and S.
+    """
+    T = {}
+    x_elements = set(x for x, y in R)
+    y_elements = set(y for x, y in R)
+    z_elements = set(z for y, z in S)
+
+    for x in x_elements:
+        for z in z_elements:
+            min_values = []
+            for y in y_elements:
+                if (x, y) in R and (y, z) in S:
+                    min_values.append(min(R[(x, y)], S[(y, z)]))
+            if min_values:
+                T[(x, z)] = max(min_values)
+    return T
+
+# Predefined fuzzy sets
+A = {'x1': 0.7, 'x2': 0.4, 'x3': 0.9}
+B = {'y1': 0.6, 'y2': 0.8, 'y3': 0.5}
+C = {'z1': 0.5, 'z2': 0.9, 'z3': 0.3}
+
+# Compute fuzzy relations
+R = cartesian_product_fuzzy_relation(A, B)
+S = cartesian_product_fuzzy_relation(B, C)
+
+# Perform max-min composition
+T = max_min_composition(R, S)
+
+# Print the results
+print("Fuzzy Set A:", A)
+print("Fuzzy Set B:", B)
+print("Fuzzy Set C:", C)
+print("\nFuzzy Relation R (A × B):", R)
+print("Fuzzy Relation S (B × C):", S)
+print("\nMax-Min Composition (R o S):")
+for (x, z), value in T.items():
+    print(f"({x}, {z}): {value}")
+def cartesian_product_fuzzy_relation(A, B):
+    """
+    Create a fuzzy relation by Cartesian product of fuzzy sets A and B.
+    The membership value of the pair (x, y) is min(A(x), B(y)).
+    """
+    relation = {}
+    for x in A:
+        for y in B:
+            relation[(x, y)] = min(A[x], B[y])
+    return relation
+​
+def max_min_composition(R, S):
+    """
+    Perform max-min composition on fuzzy relations R and S.
+    """
+    T = {}
+    x_elements = set(x for x, y in R)
+    y_elements = set(y for x, y in R)
+    z_elements = set(z for y, z in S)
+​
+    for x in x_elements:
+        for z in z_elements:
+            min_values = []
+            for y in y_elements:
+                if (x, y) in R and (y, z) in S:
+                    min_values.append(min(R[(x, y)], S[(y, z)]))
+            if min_values:
+                T[(x, z)] = max(min_values)
+    return T
+​
+# Predefined fuzzy sets
+A = {'x1': 0.7, 'x2': 0.4, 'x3': 0.9}
+B = {'y1': 0.6, 'y2': 0.8, 'y3': 0.5}
+C = {'z1': 0.5, 'z2': 0.9, 'z3': 0.3}
+​
+# Compute fuzzy relations
+R = cartesian_product_fuzzy_relation(A, B)
+S = cartesian_product_fuzzy_relation(B, C)
+​
+# Perform max-min composition
+T = max_min_composition(R, S)
+​
+# Print the results
+print("Fuzzy Set A:", A)
+print("Fuzzy Set B:", B)
+print("Fuzzy Set C:", C)
+print("\nFuzzy Relation R (A × B):", R)
+print("Fuzzy Relation S (B × C):", S)
+print("\nMax-Min Composition (R o S):")
+for (x, z), value in T.items():
+    print(f"({x}, {z}): {value}")
