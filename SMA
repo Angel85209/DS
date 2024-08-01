@@ -1,0 +1,565 @@
+######  P-2  #######################
+#Web scrapping of Twitter data
+!pip install tweeterpy
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from tweeterpy import TweeterPy
+from tweeterpy.util import User, Tweet
+
+twitter = TweeterPy()
+# Search for term "IPL" Keyword
+Requires authentication From Twitter API
+Enter username and password
+data = twitter.search("IPL")
+# Dictionary to Dataframe conversion
+import pandas as pd
+from pandas import json_normalize
+
+combined_data = []
+
+for tweet_data in data['data'][1:]:
+    # Create a Tweet object to get strcutured data
+    tweet = Tweet(tweet_data)
+
+    # Get user account data using 'screen_name'
+    user_data = twitter.get_user_data(tweet.dict()['screen_name'])
+
+    # Flatten tweet and user data
+    flattened_tweet_data = json_normalize(tweet.dict())
+    flattened_user_data = json_normalize(user_data)
+
+    # Merge tweet and user data into a single dictionary
+    combined_data_row = {
+        **flattened_tweet_data.to_dict(orient='records')[0],
+        **flattened_user_data.to_dict(orient='records')[0]
+    }
+
+    # Append the combined data to the list
+    combined_data.append(combined_data_row)
+
+# Convert the list of dictionaries into a DataFrame
+df = pd.DataFrame(combined_data)
+# Display the DataFrame
+print(df)
+ 
+selected_df.info()
+ 
+#Source
+source_counts = selected_df['source'].value_counts()
+plt.figure(figsize=(10, 6))
+source_counts.plot(kind='pie', autopct='%1.1f%%', startangle=140)
+plt.title('Distribution of Tweet Sources')
+plt.axis('equal')
+plt.tight_layout()
+plt.show() 
+
+ 
+
+#Tweets by User
+tweets_per_user = selected_df['screen_name'].value_counts().head(10)
+plt.figure(figsize=(10, 6))
+tweets_per_user.plot(kind='bar', color='skyblue')
+plt.title('Top 10 Users by Number of Tweets')
+plt.xlabel('User Name')
+plt.ylabel('Number of Tweets')
+plt.xticks(rotation=45, ha='right')
+plt.tight_layout()
+plt.show()
+ 
+# User created by year
+selected_df['legacy.created_at'] = pd.to_datetime(selected_df['legacy.created_at'], errors='coerce')
+
+# Extract year from the 'legacy.created_at' column
+selected_df['user_creation_year'] = selected_df['legacy.created_at'].dt.year
+# Drop rows with NaT values
+selected_df.dropna(subset=['user_creation_year'], inplace=True)
+
+# Count the number of users created each year
+user_creation_counts = selected_df['user_creation_year'].value_counts().sort_index()
+plt.figure(figsize=(10, 6))
+user_creation_counts.plot(kind='bar', color='skyblue')
+plt.title('User Creation Year-wise')
+plt.xlabel('Year')
+plt.ylabel('Number of Users Created')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+#####  P-4  ########################################
+
+#Importing necessary libraries
+import warnings
+warnings.filterwarnings('ignore')
+import pandas as pd
+import re
+import seaborn as sns
+from sklearn.feature_extraction.text import TfidfVectorizer
+import matplotlib.pyplot as plt
+from wordcloud import WordCloud
+#Import NLTK package
+
+import nltk
+nltk.download('stopwords')
+from nltk.corpus import stopwords
+
+#Import Dataset
+data = pd.read_csv('flipkart_data.csv')
+data.head()
+ 
+# unique ratings
+pd.unique(data['rating'])
+ 
+#plot the arrays
+sns.countplot(data=data,
+              x='rating',
+              order=data.rating.value_counts().index)
+
+ 
+
+# rating label(final)
+pos_neg = []
+for i in range(len(data['rating'])):
+    if data['rating'][i] >= 5:
+        pos_neg.append(1)
+    else:
+        pos_neg.append(0)
+
+data['label'] = pos_neg
+from tqdm import tqdm
+def preprocess_text(text_data):
+    preprocessed_text = []
+       for sentence in tqdm(text_data):
+        # Removing punctuations
+        sentence = re.sub(r'[^\w\s]', '', sentence)
+
+        # Converting lowercase and removing stopwords
+        preprocessed_text.append(' '.join(token.lower()
+                                          for token in nltk.word_tokenize(sentence)
+                                          if token.lower() not in stopwords.words('english')))
+
+    return preprocessed_text
+import nltk
+nltk.download('punkt')
+preprocessed_review = preprocess_text(data['review'].values)
+data['review'] = preprocessed_review
+ 
+
+Data.head()
+ 
+#Check Positive / Negative sentiments
+data["label"].value_counts()
+ 
+#Word cloud of Positive label = 1
+consolidated = ' '.join(
+    word for word in data['review'][data['label'] == 1].astype(str))
+wordCloud = WordCloud(width=1600, height=800,
+                      random_state=None, max_font_size=110)
+plt.figure(figsize=(15, 10))
+plt.imshow(wordCloud.generate(consolidated), interpolation='bilinear')
+plt.axis('off')
+plt.show()
+ 
+
+#Word cloud of Negative label = 0
+
+consolidated = ' '.join(
+    word for word in data['review'][data['label'] == 0].astype(str))
+wordCloud = WordCloud(width=1600, height=800,
+                      random_state=None, max_font_size=110)
+plt.figure(figsize=(15, 10))
+plt.imshow(wordCloud.generate(consolidated), interpolation='bilinear')
+plt.axis('off')
+plt.show()
+ 
+
+
+
+
+
+
+#####  P-5  ##########################################
+
+!pip install community
+!pip install python-louvain
+
+import pandas as pd
+import community
+import networkx as nx
+import matplotlib.pyplot as plt
+from networkx.algorithms import bipartite
+from networkx.algorithms import community
+from community import community_louvain
+
+data=pd.read_csv('BangaloreZomatoData.csv')
+data.head()
+
+data.info()
+
+data.drop(['URL','Cuisines','Area','Timing','Full_Address','KnownFor','PopularDishes','PeopleKnownFor'],axis=1,inplace=True)
+
+data['Dinner Ratings'].unique()
+data['Dinner Ratings'].value_counts()
+
+df=pd.DataFrame(data)
+df
+df.to_csv('zomato.csv')
+
+B = nx.Graph()
+
+users=df['Name'].unique()
+restaurants=df['Dinner Ratings'].unique()
+B.add_nodes_from(users,bipartite=0)
+B.add_nodes_from(restaurants,bipartite=1)
+edges=[(row['Name'],row['Dinner Ratings'],row['AverageCost']) for idx, row in df.iterrows()]
+B.add_weighted_edges_from(edges)
+
+user_nodes=[n for n, d in B.nodes(data=True) if d['bipartite']==0]
+user_graph=bipartite.weighted_projected_graph(B, user_nodes)
+
+partition=community_louvain.best_partition(user_graph, weight='weight')
+
+for user, community in partition.items():
+    print(f'User {user} is in community {community}')
+
+pos=nx.spring_layout(user_graph)
+colors=[partition[node] for node in user_graph.nodes()]
+nx.draw(user_graph,pos,node_color=colors,with_labels=False,node_size=50,cmap=plt.cm.rainbow)
+plt.show()
+
+df=pd.read_csv('Instagram User Stats.csv')
+df.head()
+
+df.columns.str.strip()
+df.reset_index()
+
+df['Number of posts']=pd.to_numeric(df['Number of posts'],errors='coerce')
+df['Number of Followers']=pd.to_numeric(df['Number of Followers'],errors='coerce')
+df['Number of Following']=pd.to_numeric(df['Number of Following'],errors='coerce')
+df['Engagement grade']=pd.to_numeric(df['Engagement grade'],errors='coerce')
+df['Engagement Rate']=pd.to_numeric(df['Engagement Rate'],errors='coerce')
+df['Followers growth']=pd.to_numeric(df['Followers growth'],errors='coerce')
+df['Outsiders percentage']=pd.to_numeric(df['Outsiders percentage'],errors='coerce')
+
+def categorize_influence(row):
+    if row['Engagement Rate']>0.05 and row['Followers growth']>0.05:
+        return 'high Influence'
+    if row['Engagement Rate']>0.03 and row['Engagement Rate']>0.03:
+        return 'Medium Influence'
+    else:
+        return 'Low Influence'
+
+df['influence category'] = df.apply(categorize_influence, axis=1)
+df.to_csv('influence_analysis.csv', index=False)
+
+top_influencers = df.sort_values(by=['Engagement grade', 'Followers growth'], ascending=[False,False])
+
+print(top_influencers['Number of posts', 'Number of Followers', 'Number of Following', Engagement grade', 'Engagement Rate', 'Followers growth', 'outsiders percentage'])
+
+average_engagement_rate = df.groupby('id')['Engagement Rate'].mean().sort_values(ascending=False)
+
+plt.figure(figsize=(16,9))
+sorted_engagement_rate.plot(kind='bar')
+plt.title('Average engagement rate by social media profile ID')
+plt.xlabel('Profile ID')
+plt.ylabel('Average Engagement rate')
+plt.show()
+
+
+
+
+
+
+
+
+#####  p-8  ################################################################
+!python -c "import torch; print(torch.version.cuda)"
+!pip install -q torch-scatter==latest+cu101 -f https://pytorch-geometric.com/whl/torch-1.6.0.html
+!pip install -q torch-sparse==latest+cu101 -f https://pytorch-geometric.com/whl/torch-1.6.0.html
+!pip install -q git+https://github.com/rusty1s/pytorch_geometric.git
+from torch_geometric.datasets import Planetoid
+from torch_geometric.transforms import NormalizeFeatures
+
+dataset = Planetoid(root='data/Planetoid', name='Cora', transform=NormalizeFeatures())
+
+print(f'Dataset: {dataset}:')
+print('======================')
+print(f'Number of graphs: {len(dataset)}')
+print(f'Number of features: {dataset.num_features}')
+print(f'Number of classes: {dataset.num_classes}')
+
+data = dataset[0]
+print(data)
+print(data.x.shape)
+
+data.x[0][:50]
+import torch
+from torch.nn import Linear
+import torch.nn.functional as F
+from torch_geometric.nn import GCNConv #GATConv
+
+class GCN(torch.nn.Module):
+    def _init_(self, hidden_channels):
+        super(GCN, self)._init_()
+        torch.manual_seed(42)
+
+        # Initialize the layers
+        self.conv1 = GCNConv(dataset.num_features, hidden_channels)
+        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        self.out = Linear(hidden_channels, dataset.num_classes)
+
+    def forward(self, x, edge_index):
+        # First Message Passing Layer (Transformation)
+        x = self.conv1(x, edge_index)
+        x = x.relu()
+        x = F.dropout(x, p=0.5, training=self.training)
+
+        # Second Message Passing Layer
+        x = self.conv2(x, edge_index)
+        x = x.relu()
+        x = F.dropout(x, p=0.5, training=self.training)
+
+        # Output layer
+        x = F.softmax(self.out(x), dim=1)
+        return x
+
+model = GCN(hidden_channels=16)
+print(model)
+# Initialize Optimizer
+learning_rate = 0.01
+decay = 5e-4
+optimizer = torch.optim.Adam(model.parameters(),
+                             lr=learning_rate,
+                             weight_decay=decay)
+# Define loss function (CrossEntropyLoss for Classification Problems with
+# probability distributions)
+criterion = torch.nn.CrossEntropyLoss()
+
+def train():
+      model.train()
+      optimizer.zero_grad()
+      # Use all data as input, because all nodes have node features
+      out = model(data.x, data.edge_index)
+      # Only use nodes with labels available for loss calculation --> mask
+      loss = criterion(out[data.train_mask], data.y[data.train_mask])
+      loss.backward()
+      optimizer.step()
+      return loss
+
+def test():
+      model.eval()
+      out = model(data.x, data.edge_index)
+      # Use the class with highest probability.
+      pred = out.argmax(dim=1)
+      # Check against ground-truth labels.
+      test_correct = pred[data.test_mask] == data.y[data.test_mask]
+      # Derive ratio of correct predictions.
+      test_acc = int(test_correct.sum()) / int(data.test_mask.sum())
+      return test_acc
+
+losses = []
+for epoch in range(0, 1001):
+    loss = train()
+    losses.append(loss)
+    if epoch % 100 == 0:
+      print(f'Epoch: {epoch:03d}, Loss: {loss:.4f}')
+
+
+
+
+
+
+
+#####  p-9  ############################################
+
+pip install advertools
+%config InlineBackend.figure_format = 'retina'
+import matplotlib.pyplot as plt
+import pandas as pd
+import advertools as adv
+import networkx as nx
+pd.set_option('display.max_columns', None)
+pd.set_option('display.max_colwidth', 280)
+adv._version_
+
+from google.colab import files
+uploaded = files.upload()
+ 
+tweets_users_df = pd.read_csv('Tweets.csv', )
+print(tweets_users_df.shape)
+tweets_users_df.head(3)
+ 
+[x for x in dir(adv) if x.startswith('extract')]  # currently available extract functions
+hashtag_summary = adv.extract_hashtags(tweets_users_df['tweet_full_text'])
+hashtag_summary.keys()
+hashtag_summary['top_hashtags'][:10]
+plt.figure(facecolor='#ebebeb', figsize=(8, 12))
+plt.barh([x[0] for x in hashtag_summary['top_hashtags'][2:][:30]][::-1],
+         [x[1] for x in hashtag_summary['top_hashtags'][2:][:30]][::-1])
+plt.title('Top Hashtags')
+plt.grid(alpha=0.5)
+plt.gca().set_frame_on(False)
+
+ 
+
+mention_summary = adv.extract_mentions(tweets_users_df['tweet_full_text'])
+mention_summary.keys()
+mention_summary['top_mentions'][:10]
+plt.figure(facecolor='#ebebeb', figsize=(8, 8))
+plt.barh([x[0] for x in mention_summary['top_mentions'][:15]][::-1],
+[x[1] for x in mention_summary['top_mentions'][:15]][::-1])
+plt.title('Top Mentions')
+plt.grid(alpha=0.5)
+plt.xticks(range(0, 1100, 100))
+plt.gca().set_frame_on(False)
+ 
+pip install advertools networkx matplotlib pandas
+# Create a network graph for hashtags
+G_hashtags = nx.Graph()
+# Create a network graph for mentions
+G_mentions = nx.Graph()
+
+pip install python-louvain
+import community as community_louvain
+tweets = tweets_users_df[['tweet_id', 'tweet_full_text', 'tweet_entities']]
+
+# Function to extract hashtags and mentions from tweet entities
+def extract_entities(entities_str):
+    hashtags = []
+    mentions = []
+    try:
+        entities = eval(entities_str)
+        if 'hashtags' in entities:
+            hashtags = [tag['text'] for tag in entities['hashtags']]
+        if 'user_mentions' in entities:
+            mentions = [mention['screen_name'] for mention in entities['user_mentions']]
+    except:
+        pass
+    return hashtags, mentions
+
+for index, row in tweets.iterrows():
+    tweet_id = row['tweet_id']
+    hashtags, mentions = extract_entities(row['tweet_entities'])
+
+    for hashtag in hashtags:
+        G_hashtags.add_node(tweet_id)
+        G_hashtags.add_node(hashtag)
+        G_hashtags.add_edge(tweet_id, hashtag)
+
+    for mention in mentions:
+        G_mentions.add_node(tweet_id)
+        G_mentions.add_node(mention)
+        G_mentions.add_edge(tweet_id, mention)
+
+import pandas as pd
+import networkx as nx
+# Calculate centrality measures for hashtags network
+hashtag_degree_centrality = nx.degree_centrality(G_hashtags)
+hashtag_betweenness_centrality = nx.betweenness_centrality(G_hashtags)
+hashtag_closeness_centrality = nx.closeness_centrality(G_hashtags)
+hashtag_clustering_coefficient = nx.clustering(G_hashtags)
+
+# Add these centrality measures as node attributes
+for node in G_hashtags.nodes():
+    G_hashtags.nodes[node]['degree_centrality'] = hashtag_degree_centrality[node]
+    G_hashtags.nodes[node]['betweenness_centrality'] = hashtag_betweenness_centrality[node]
+    G_hashtags.nodes[node]['closeness_centrality'] = hashtag_closeness_centrality[node]
+    G_hashtags.nodes[node]['clustering_coefficient'] = hashtag_clustering_coefficient[node]
+
+# Calculate centrality measures for mentions network
+mention_degree_centrality = nx.degree_centrality(G_mentions)
+mention_betweenness_centrality = nx.betweenness_centrality(G_mentions)
+mention_closeness_centrality = nx.closeness_centrality(G_mentions)
+mention_clustering_coefficient = nx.clustering(G_mentions)
+
+# Add these centrality measures as node attributes
+for node in G_mentions.nodes():
+    G_mentions.nodes[node]['degree_centrality'] = mention_degree_centrality[node]
+    G_mentions.nodes[node]['betweenness_centrality'] = mention_betweenness_centrality[node]
+    G_mentions.nodes[node]['closeness_centrality'] = mention_closeness_centrality[node]
+    G_mentions.nodes[node]['clustering_coefficient'] = mention_clustering_coefficient[node]
+
+# Prepare node data for hashtags network
+hashtags_nodes = pd.DataFrame([
+    (node, attr['degree_centrality'], attr['betweenness_centrality'], attr['closeness_centrality'], attr['clustering_coefficient'])
+    for node, attr in G_hashtags.nodes(data=True)
+], columns=['Node', 'Degree Centrality', 'Betweenness Centrality', 'Closeness Centrality', 'Clustering Coefficient'])
+hashtags_nodes.to_csv("hashtags_nodes.csv", index=False)
+
+# Prepare node data for mentions network
+mentions_nodes = pd.DataFrame([
+    (node, attr['degree_centrality'], attr['betweenness_centrality'], attr['closeness_centrality'], attr['clustering_coefficient'])
+    for node, attr in G_mentions.nodes(data=True)
+], columns=['Node', 'Degree Centrality', 'Betweenness Centrality', 'Closeness Centrality', 'Clustering Coefficient'])
+mentions_nodes.to_csv("mentions_nodes.csv", index=False)
+
+files.download('hashtags_nodes.csv')
+files.download('mentions_nodes.csv')
+
+import csv
+# Define a function to write edges to CSV
+def write_edges_to_csv(edges, filename):
+    with open(filename, 'w', newline='') as file:
+        writer = csv.writer(file)
+        # Write header
+        writer.writerow(["Source", "Target", "Weight"])
+        # Write edge data
+        for source, target, data in edges:
+            writer.writerow([source, target, data.get('weight', 1)])
+
+# Write hashtag edges to CSV
+write_edges_to_csv(G_hashtags.edges(data=True), 'hashtag_edges.csv')
+
+# Write mention edges to CSV
+write_edges_to_csv(G_mentions.edges(data=True), 'mention_edges.csv')
+
+from google.colab import files
+files.download('hashtag_edges.csv')
+files.download('mention_edges.csv')
+
+#After Downloading these csv files (hashtag_nodes.csv, hashtag_edges.csv, Mention_nodes.csv, mention_edges.csv) from the code , Use these csv files for performing visualization in gephi tool.
+
+!pip install keybert networkx TextNet
+!pip install keybert networkx nltk
+
+import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
+import advertools as adv
+
+tweets_users_df = pd.read_csv('Tweets.csv')
+hashtag_summary = adv.extract_hashtags(tweets_users_df['tweet_full_text'])
+mention_summary = adv.extract_mentions(tweets_users_df['tweet_full_text'])
+
+G = nx.DiGraph()
+
+for hashtags in hashtag_summary['hashtags']:
+    for i in range(len(hashtags)):
+        for j in range(i + 1, len(hashtags)):
+            if G.has_edge(hashtags[i], hashtags[j]):
+                G[hashtags[i]][hashtags[j]]['weight'] += 1
+            else:
+                G.add_edge(hashtags[i], hashtags[j], weight=1)
+for mentions in mention_summary['mentions']:
+    for i in range(len(mentions)):
+        for j in range(i + 1, len(mentions)):
+            if G.has_edge(mentions[i], mentions[j]):
+                G[mentions[i]][mentions[j]]['weight'] += 1
+            else:
+                G.add_edge(mentions[i], mentions[j], weight=1)
+
+plt.figure(figsize=(15, 15))
+pos = nx.spring_layout(G, k=0.1)
+nx.draw(G, pos, with_labels=True, node_size=50, font_size=10, edge_color='#BBBBBB')
+plt.title('Knowledge Graph of Tweets', fontsize=20)
+plt.show()
